@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CausaTwin v0.3 — Real LLM Drug Target Debate Engine</title>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+:root {
+  --bg: #ffffff;
+  --text: #1a1a1a;
+  --text-light: #666;
+  --border: #e0e0e0;
+  --border-strong: #999;
+  --blue: #1F4E79;
+  --blue-light: #DAE3F3;
+  --green: #2E7D32;
+  --green-light: #E8F5E9;
+  --purple: #6A1B9A;
+  --purple-light: #F3E5F5;
+  --red: #C62828;
+  --red-light: #FFEBEE;
+  --amber: #F57C00;
+  --amber-light: #FFF3E0;
+  --gray: #404040;
+  --gray-light: #f5f5f5;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.10);
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+header h1 { margin: 0; font-size: 22px; font-weight: 600; color: var(--text); }
+header .subtitle { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--gray-light); }
+.btn-primary { background: var(--blue); color: white; border-color: var(--blue); }
+.btn-primary:hover { background: #163d5e; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn svg { width: 14px; height: 14px; }
+
+.query-section {
+  background: var(--gray-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.query-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.query-input {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--bg);
+}
+.query-input:focus { outline: 2px solid var(--blue-light); border-color: var(--blue); }
+.query-label { font-size: 12px; color: var(--text-light); margin-bottom: 4px; display: block; }
+.mode-toggle { display: flex; gap: 8px; align-items: center; }
+.mode-pill {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--border);
+  color: var(--text-light);
+  cursor: pointer;
+  border: none;
+}
+.mode-pill.active { background: var(--purple); color: white; }
+.mode-pill.demo.active { background: var(--blue); }
+.samples-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.sample-chip {
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  cursor: pointer;
+  color: var(--text);
+}
+.sample-chip:hover { border-color: var(--blue); color: var(--blue); }
+
+.progress-section {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--blue);
+  transition: width 0.3s;
+  width: 0;
+}
+.progress-steps { font-size: 13px; color: var(--text-light); }
+.progress-step { padding: 4px 0; }
+.progress-step.active { color: var(--blue); font-weight: 500; }
+.progress-step.done { color: var(--green); }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+.badge-real { background: var(--purple-light); color: var(--purple); }
+.badge-demo { background: var(--blue-light); color: var(--blue); }
+.badge-category { background: var(--gray-light); color: var(--gray); }
+.badge-advance { background: var(--green-light); color: var(--green); }
+.badge-hold { background: var(--amber-light); color: var(--amber); }
+.badge-reject { background: var(--red-light); color: var(--red); }
+.badge-conditional { background: var(--blue-light); color: var(--blue); }
+
+.result-section { margin-bottom: 32px; }
+.target-header {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: none;
+}
+.target-info h2 { margin: 0 0 4px 0; font-size: 18px; }
+.target-info .subtitle { font-size: 13px; color: var(--text-light); }
+.final-score {
+  text-align: right;
+}
+.final-score .number { font-size: 36px; font-weight: 600; }
+.final-score .label { font-size: 12px; color: var(--text-light); }
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--gray-light);
+}
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-light);
+  border-bottom: 2px solid transparent;
+}
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--bg); }
+.tab:hover:not(.active) { color: var(--text); }
+
+.tab-content { padding: 20px; background: var(--bg); border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; }
+
+.agent-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--bg);
+}
+.agent-card.bea { border-left: 3px solid var(--blue); }
+.agent-card.bca { border-left: 3px solid var(--green); }
+.agent-card.ma { border-left: 3px solid var(--purple); }
+.agent-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.agent-name { font-size: 14px; font-weight: 600; }
+.agent-role { font-size: 12px; color: var(--text-light); }
+.agent-argument { font-size: 13px; line-height: 1.7; white-space: pre-wrap; margin: 8px 0; }
+.scores-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 10px; }
+.score-item { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+.score-item .label { color: var(--text-light); }
+.score-item .value { font-weight: 500; }
+
+.consensus {
+  background: var(--purple-light);
+  border: 1px solid var(--purple);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+.consensus h3 { margin: 0 0 8px 0; color: var(--purple); font-size: 14px; }
+.next-steps { background: var(--gray-light); border-radius: 6px; padding: 12px; margin-top: 8px; }
+.next-steps h4 { margin: 0 0 6px 0; font-size: 12px; color: var(--text); }
+.next-steps ol { margin: 0; padding-left: 18px; font-size: 12px; }
+
+.demo-section { margin-top: 32px; }
+.demo-section h2 { font-size: 16px; margin-bottom: 12px; }
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.demo-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  cursor: pointer;
+  background: var(--bg);
+  transition: all 0.15s;
+}
+.demo-card:hover { border-color: var(--blue); box-shadow: var(--shadow); }
+.demo-card .id { font-size: 11px; color: var(--text-light); }
+.demo-card .name { font-size: 14px; font-weight: 500; margin: 2px 0; }
+.demo-card .meta { font-size: 12px; color: var(--text-light); }
+.demo-card .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.modal h2 { margin-top: 0; font-size: 18px; }
+.modal label { font-size: 12px; color: var(--text-light); display: block; margin-top: 12px; }
+.modal input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 14px; margin-top: 4px; }
+.modal-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.modal .help { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+
+.error-banner {
+  background: var(--red-light);
+  color: var(--red);
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 12px 0;
+  font-size: 13px;
+  display: none;
+}
+.error-banner.show { display: block; }
+
+.cache-info {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.tabs-pills { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>CausaTwin v0.3 <span style="font-size:12px;color:var(--text-light);" data-i18n="app.subtitle">Real LLM 靶点辩论引擎</span></h1>
+      <div class="subtitle" data-i18n="app.tagline">双专家对抗推理 · 基因-疾病对靶点潜力评估</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn" id="langToggle" onclick="toggleLanguage()" title="Switch language" style="font-weight:600;letter-spacing:0.5px;">
+        <span id="langToggleText">EN</span>
+      </button>
+      <button class="btn" onclick="openSettings()">
+        <i data-lucide="settings"></i> <span data-i18n="header.settings">设置</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Query Section -->
+  <div class="query-section">
+    <div class="query-row">
+      <div style="flex:1; min-width:200px;">
+        <label class="query-label" data-i18n="query.gene_label">基因 / 蛋白</label>
+        <input id="geneInput" class="query-input" data-i18n-placeholder="query.gene_placeholder" placeholder="例如: PCSK9, IL6R, KRAS, TP53" />
+      </div>
+      <div style="flex:1; min-width:200px;">
+        <label class="query-label" data-i18n="query.disease_label">疾病 / 性状</label>
+        <input id="diseaseInput" class="query-input" data-i18n-placeholder="query.disease_placeholder" placeholder="例如: Hypercholesterolemia, Lung Cancer" />
+      </div>
+      <div class="mode-toggle">
+        <div>
+          <label class="query-label" data-i18n="query.mode">模式</label>
+          <button id="modeRealBtn" class="mode-pill active" onclick="setMode('real')">Real LLM</button>
+          <button id="modeDemoBtn" class="mode-pill demo" onclick="setMode('demo')">Demo</button>
+        </div>
+      </div>
+      <div style="align-self:flex-end;">
+        <button class="btn btn-primary" id="runBtn" onclick="runDebate()">
+          <i data-lucide="play"></i> <span data-i18n="query.run">启动辩论</span>
+        </button>
+      </div>
+    </div>
+    <div class="samples-row" id="samplesRow"></div>
+    <div id="cacheInfo" class="cache-info"></div>
+  </div>
+
+  <div id="errorBanner" class="error-banner"></div>
+
+  <!-- Progress Section -->
+  <div id="progressSection" class="progress-section" style="display:none;">
+    <div style="font-weight:500; margin-bottom:8px;" id="progressTitle" data-i18n="progress.title">4 轮辩论进行中...</div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+    <div class="progress-steps" id="progressSteps"></div>
+  </div>
+
+  <!-- Result Section -->
+  <div id="resultSection" class="result-section" style="display:none;"></div>
+
+  <!-- Demo Cases Section -->
+  <div class="demo-section">
+    <h2><span data-i18n="demo.title">11 个预生成 demo cases</span> <span style="font-size:12px;color:var(--text-light);font-weight:normal;" data-i18n="demo.subtitle">点击查看完整 4 轮辩论</span></h2>
+    <div class="demo-grid" id="demoGrid"></div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2 data-i18n="settings.title">设置 — Real LLM Mode</h2>
+    <p style="font-size:13px;color:var(--text-light);" data-i18n="settings.intro">Real LLM Mode 会调用 DeepSeek API 实时生成 4 轮辩论。API key 仅存储在本地浏览器 (localStorage), 不会发送到其他服务器。</p>
+
+    <label data-i18n="settings.api_key">DeepSeek API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-..." />
+    <div class="help" data-i18n-html="settings.api_key_help">从 <a href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek Platform</a> 获取</div>
+
+    <label data-i18n="settings.model">Model (默认 deepseek-chat 兼容 v4-flash)</label>
+    <input type="text" id="modelInput" value="deepseek-chat" />
+    <div class="help" data-i18n="settings.model_help">可选: deepseek-chat / deepseek-reasoner</div>
+
+    <div class="modal-buttons">
+      <button class="btn" onclick="closeSettings()" data-i18n="settings.cancel">取消</button>
+      <button class="btn" onclick="testConnection()" data-i18n="settings.test">测试连接</button>
+      <button class="btn btn-primary" onclick="saveSettings()" data-i18n="settings.save">保存</button>
+    </div>
+    <div id="testResult" style="margin-top:12px;font-size:12px;"></div>
+  </div>
+</div>
+
+<!-- Data files (generated by build_lite_cases.py) -->
+<script src="demo_cases_data.js"></script>
+<script src="target_kb_data.js"></script>
+
+<script>
+// ========== Configuration ==========
+let CURRENT_MODE = 'real';  // 'real' or 'demo'
+let API_KEY = localStorage.getItem('causatwin_api_key') || '';
+let MODEL_NAME = localStorage.getItem('causatwin_model') || 'deepseek-chat';
+let CACHE = JSON.parse(localStorage.getItem('causatwin_cache') || '{}');
+
+// ========== System Prompts ==========
+const BEA_PROMPT = (gene, disease) => `You are BEA (Biological Evidence Agent), a senior human genetics and genomics expert.
+
+Your task: Analyze causal genetic evidence for whether ${gene} is a valid drug target for ${disease}.
+
+Recall relevant evidence:
+- GWAS hits (NHGRI-EBI Catalog, UK Biobank)
+- pQTL / eQTL (cis-pQTL most relevant)
+- Mendelian randomization (MR-Base, UK Biobank)
+- Co-localization analyses
+- Mendelian disease / monogenic disorders
+- Allelic series, LoF/GoF variants
+
+Output strict JSON (no markdown, no preamble):
+{
+  "argument": "200-300 word genetics argument with specific variants/studies",
+  "scores": {
+    "causal_evidence": <1-10>,
+    "cross_population": <1-10>,
+    "mr_strength": <1-10>,
+    "pQTL_signal": <1-10>
+  }
+}
+
+Be precise, not speculative. If you have no strong evidence, set scores low (1-3) and explain.`;
+
+const BCA_PROMPT = (gene, disease) => `You are BCA (Biochemical/Chemical Agent), a senior drug discovery expert.
+
+Your task: Analyze druggability and tractability of ${gene} as a target for ${disease}.
+
+Recall relevant evidence:
+- Protein class and structural features (PDB, AlphaFold)
+- Approved drugs (DrugBank, FDA database)
+- Investigational compounds (ChEMBL, PubChem)
+- Clinical trials (ClinicalTrials.gov)
+- Failed trials and lessons learned
+- Modality options: small molecule, antibody, ASO, siRNA, gene therapy
+- Off-target risks, safety profile
+- Tissue distribution
+
+Output strict JSON (no markdown):
+{
+  "argument": "200-300 word druggability argument",
+  "scores": {
+    "druggability": <1-10>,
+    "modality_feasibility": <1-10>,
+    "pathway_centrality": <1-10>,
+    "off_target_risk": <1-10, higher = lower risk>
+  }
+}`;
+
+const MA_PROMPT = `You are MA (Mediator Agent), an expert drug development program leader.
+
+Integrate BEA's genetic evidence and BCA's druggability assessment.
+
+Decision rubric:
+- 8.0-10.0: Advance (high confidence, both strong)
+- 6.0-7.9: Conditional Advance (one strong, other has caveats)
+- 4.0-5.9: Hold (need more evidence)
+- <4.0: Reject (strong evidence against)
+
+Output strict JSON:
+{
+  "final_score": <float 1-10>,
+  "decision": "Advance" | "Conditional Advance" | "Hold" | "Reject",
+  "confidence": <1-10>,
+  "consensus_summary": "200-word integration of both perspectives",
+  "next_steps": ["step 1", "step 2", "step 3"]
+}`;
+
+
+// ========== i18n ==========
+const I18N = {
+  en: {
+    'app.subtitle': 'Real LLM Drug Target Debate Engine',
+    'app.tagline': 'Two-expert adversarial reasoning · Gene-disease target potential assessment',
+    'header.settings': 'Settings',
+    'query.gene_label': 'Gene / Protein',
+    'query.gene_placeholder': 'e.g., PCSK9, IL6R, KRAS, TP53',
+    'query.disease_label': 'Disease / Phenotype',
+    'query.disease_placeholder': 'e.g., Hypercholesterolemia, Lung Cancer',
+    'query.mode': 'Mode',
+    'query.run': 'Run Debate',
+    'progress.title': '4-round debate in progress...',
+    'progress.r_eval': 'R{r}: BEA + BCA evaluating...',
+    'progress.r_ma': 'R{r}: MA arbitrating...',
+    'progress.r_bea': 'R{r} BEA evaluating...',
+    'progress.r_bca': 'R{r} BCA evaluating...',
+    'progress.r_ma_arb': 'R{r} MA arbitrating...',
+    'progress.r_bea_done': 'R{r} BEA done',
+    'progress.r_bca_done': 'R{r} BCA done',
+    'progress.r_ma_done': 'R{r} MA done',
+    'demo.title': '11 pre-generated demo cases',
+    'demo.subtitle': 'Click to view full 4-round debate',
+    'settings.title': 'Settings — Real LLM Mode',
+    'settings.intro': 'Real LLM Mode calls the DeepSeek API to generate a 4-round debate in real time. The API key is stored only in your local browser (localStorage); it is never sent to any other server.',
+    'settings.api_key': 'DeepSeek API Key',
+    'settings.api_key_help': 'Get one from <a href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek Platform</a>',
+    'settings.model': 'Model (default deepseek-chat, v4-flash compatible)',
+    'settings.model_help': 'Optional: deepseek-chat / deepseek-reasoner',
+    'settings.cancel': 'Cancel',
+    'settings.test': 'Test Connection',
+    'settings.save': 'Save',
+    'error.api_key_needed': 'Real LLM mode requires a DeepSeek API key. Click "Settings" in the top-right corner to configure, or switch to Demo mode.',
+    'error.saved': 'Settings saved',
+    'error.fill_key': 'Please fill in API key first',
+    'error.testing': 'Testing...',
+    'error.connected': 'Connected: {0}',
+    'error.failed': 'Failed: {0}',
+    'error.gene_disease_required': 'Please fill in both gene and disease',
+    'error.cached': 'Loaded from local cache (avoiding duplicate API calls)',
+    'error.api_key_setup': 'Real LLM mode requires an API key. Click Settings to configure.',
+    'error.api_failed': 'API call failed: {0}',
+    'cache.info': 'Local cache: {0} historical debate(s)',
+    'result.protein_class': 'Protein class: {0}',
+    'result.not_in_kb': 'Not in knowledge base',
+    'result.in_kb': 'Knowledge base hit',
+    'result.confidence': 'Confidence',
+    'result.consensus': 'Consensus Argument',
+    'result.next_steps': 'Next Steps',
+    'agent.bea': 'BEA — Genetics Expert',
+    'agent.bca': 'BCA — Biochemistry / Drug Discovery Expert',
+    'agent.ma': 'MA — Mediator',
+    'agent.bea_role': 'Biological Evidence Agent (Genetics)',
+    'agent.bca_role': 'Biochemical / Chemical Agent',
+    'agent.ma_role': 'Mediator Agent',
+    'mode.real_llm': 'Real LLM Debate',
+    'mode.demo': 'Demo Mode (KB)',
+  },
+  cn: {
+    'app.subtitle': 'Real LLM 靶点辩论引擎',
+    'app.tagline': '双专家对抗推理 · 基因-疾病对靶点潜力评估',
+    'header.settings': '设置',
+    'query.gene_label': '基因 / 蛋白',
+    'query.gene_placeholder': '例如: PCSK9, IL6R, KRAS, TP53',
+    'query.disease_label': '疾病 / 性状',
+    'query.disease_placeholder': '例如: 高胆固醇血症, 肺癌',
+    'query.mode': '模式',
+    'query.run': '启动辩论',
+    'progress.title': '4 轮辩论进行中...',
+    'progress.r_eval': 'R{r}: BEA + BCA 评估中...',
+    'progress.r_ma': 'R{r}: MA 仲裁中...',
+    'progress.r_bea': 'R{r} BEA 评估中...',
+    'progress.r_bca': 'R{r} BCA 评估中...',
+    'progress.r_ma_arb': 'R{r} MA 仲裁中...',
+    'progress.r_bea_done': 'R{r} BEA 完成',
+    'progress.r_bca_done': 'R{r} BCA 完成',
+    'progress.r_ma_done': 'R{r} MA 完成',
+    'demo.title': '11 个预生成 demo cases',
+    'demo.subtitle': '点击查看完整 4 轮辩论',
+    'settings.title': '设置 — Real LLM Mode',
+    'settings.intro': 'Real LLM Mode 会调用 DeepSeek API 实时生成 4 轮辩论。API key 仅存储在本地浏览器 (localStorage)，不会发送到其他服务器。',
+    'settings.api_key': 'DeepSeek API Key',
+    'settings.api_key_help': '从 <a href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek Platform</a> 获取',
+    'settings.model': 'Model (默认 deepseek-chat 兼容 v4-flash)',
+    'settings.model_help': '可选: deepseek-chat / deepseek-reasoner',
+    'settings.cancel': '取消',
+    'settings.test': '测试连接',
+    'settings.save': '保存',
+    'error.api_key_needed': 'Real LLM 模式需要 DeepSeek API key。点击右上角"设置"配置，或切换到 Demo 模式。',
+    'error.saved': '设置已保存',
+    'error.fill_key': '请先填 API key',
+    'error.testing': '测试中...',
+    'error.connected': '连接成功: {0}',
+    'error.failed': '失败: {0}',
+    'error.gene_disease_required': '请填写基因和疾病',
+    'error.cached': '已从本地缓存加载 (避免重复 API 调用)',
+    'error.api_key_setup': 'Real LLM 模式需要 API key。点击"设置"配置。',
+    'error.api_failed': 'API 调用失败: {0}',
+    'cache.info': '本地缓存: {0} 个历史辩论',
+    'result.protein_class': '蛋白类型: {0}',
+    'result.not_in_kb': '不在知识库',
+    'result.in_kb': '知识库命中',
+    'result.confidence': '置信度',
+    'result.consensus': '综合论证',
+    'result.next_steps': '下一步建议',
+    'agent.bea': 'BEA — 遗传学专家',
+    'agent.bca': 'BCA — 生化/药物学专家',
+    'agent.ma': 'MA — 仲裁者',
+    'agent.bea_role': 'Biological Evidence Agent (Genetics)',
+    'agent.bca_role': 'Biochemical/Chemical Agent',
+    'agent.ma_role': 'Mediator Agent',
+    'mode.real_llm': 'Real LLM Debate',
+    'mode.demo': 'Demo Mode (KB)',
+  }
+};
+
+let CURRENT_LANG = localStorage.getItem('causatwin_lang') || 'en';
+
+function t(key, ...args) {
+  let s = (I18N[CURRENT_LANG] && I18N[CURRENT_LANG][key]) || key;
+  // Replace {0}, {1}, ... and {r}
+  args.forEach((a, i) => { s = s.replace('{' + i + '}', a); });
+  if (args.length > 0 && s.includes('{r}')) {
+    // For progress.r_eval pattern: first arg is r
+    s = s.replace('{r}', args[0]);
+  }
+  return s;
+}
+
+function applyLanguage() {
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  // Update all data-i18n-placeholder elements
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.placeholder = t(key);
+  });
+  // Update all data-i18n-html elements (use innerHTML for links etc)
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    el.innerHTML = t(key);
+  });
+  // Update <html lang>
+  document.documentElement.lang = CURRENT_LANG === 'cn' ? 'zh-CN' : 'en';
+  // Update toggle button text
+  document.getElementById('langToggleText').textContent = CURRENT_LANG === 'en' ? '中' : 'EN';
+  document.getElementById('langToggle').title = CURRENT_LANG === 'en' ? '切换到中文' : 'Switch to English';
+}
+
+function toggleLanguage() {
+  CURRENT_LANG = CURRENT_LANG === 'en' ? 'cn' : 'en';
+  localStorage.setItem('causatwin_lang', CURRENT_LANG);
+  applyLanguage();
+}
+
+
+// ========== UI Setup ==========
+function init() {
+  // Render sample chips
+  const samplesRow = document.getElementById('samplesRow');
+  for (const q of SAMPLE_QUERIES.slice(0, 11)) {
+    const chip = document.createElement('button');
+    chip.className = 'sample-chip';
+    chip.textContent = `${q.gene} + ${q.disease}`;
+    chip.onclick = () => {
+      document.getElementById('geneInput').value = q.gene;
+      document.getElementById('diseaseInput').value = q.disease;
+    };
+    samplesRow.appendChild(chip);
+  }
+
+  // Render demo grid
+  const demoGrid = document.getElementById('demoGrid');
+  for (const c of DEMO_CASES) {
+    const card = document.createElement('div');
+    card.className = 'demo-card';
+    const score = c.final.final_score || 0;
+    const decision = c.final.decision || 'Hold';
+    const catClass = c.category === 'positive' ? 'badge-advance' : 
+                     c.category === 'negative' ? 'badge-reject' : 'badge-conditional';
+    const decClass = decision === 'Advance' ? 'badge-advance' :
+                     decision === 'Reject' ? 'badge-reject' :
+                     decision === 'Hold' ? 'badge-hold' : 'badge-conditional';
+    card.innerHTML = `
+      <div class="id">${c.id} <span class="badge ${catClass}">${c.category}</span></div>
+      <div class="name">${c.gene}</div>
+      <div class="meta">${c.disease}</div>
+      <div class="footer">
+        <span class="badge ${decClass}">${decision}</span>
+        <span style="font-weight:500;font-size:13px;">${score.toFixed(1)}</span>
+      </div>
+    `;
+    card.onclick = () => showDemoCase(c);
+    demoGrid.appendChild(card);
+  }
+  
+  // Update cache info
+  updateCacheInfo();
+  
+  // Apply i18n
+  applyLanguage();
+
+  // Lucide icons
+  if (window.lucide) lucide.createIcons();
+}
+
+// ========== Mode ==========
+function setMode(mode) {
+  CURRENT_MODE = mode;
+  document.getElementById('modeRealBtn').classList.toggle('active', mode === 'real');
+  document.getElementById('modeDemoBtn').classList.toggle('active', mode === 'demo');
+  if (mode === 'real' && !API_KEY) {
+    showError(t('error.api_key_needed'));
+  } else {
+    hideError();
+  }
+}
+
+// ========== Settings ==========
+function openSettings() {
+  document.getElementById('apiKeyInput').value = API_KEY;
+  document.getElementById('modelInput').value = MODEL_NAME;
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+function saveSettings() {
+  API_KEY = document.getElementById('apiKeyInput').value.trim();
+  MODEL_NAME = document.getElementById('modelInput').value.trim() || 'deepseek-chat';
+  localStorage.setItem('causatwin_api_key', API_KEY);
+  localStorage.setItem('causatwin_model', MODEL_NAME);
+  closeSettings();
+  showError(t('error.saved'), 'info');
+}
+async function testConnection() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  const model = document.getElementById('modelInput').value.trim() || 'deepseek-chat';
+  if (!key) {
+    document.getElementById('testResult').innerHTML = '<span style="color:var(--red);">' + t('error.fill_key') + '</span>';
+    return;
+  }
+  document.getElementById('testResult').innerHTML = '<span style="color:var(--text-light);">' + t('error.testing') + '</span>';
+  try {
+    const r = await callDeepSeek(key, 'You are a helpful assistant.', 'Reply with: OK', model, false);
+    document.getElementById('testResult').innerHTML = `<span style="color:var(--green);">${t('error.connected', r.substring(0, 50))}</span>`;
+  } catch (e) {
+    document.getElementById('testResult').innerHTML = `<span style="color:var(--red);">${t('error.failed', e.message)}</span>`;
+  }
+}
+
+// ========== DeepSeek API ==========
+async function callDeepSeek(apiKey, systemPrompt, userPrompt, model, jsonMode = true) {
+  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.3,
+      max_tokens: 2000,
+      response_format: jsonMode ? { type: 'json_object' } : undefined
+    })
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errText.substring(0, 200)}`);
+  }
+  const data = await response.json();
+  if (!data.choices || data.choices.length === 0) {
+    throw new Error('No response from API');
+  }
+  const content = data.choices[0].message.content;
+  if (jsonMode) {
+    try {
+      return JSON.parse(content);
+    } catch (e) {
+      // Try to extract JSON from markdown code block
+      const match = content.match(/\{[\s\S]*\}/);
+      if (match) {
+        return JSON.parse(match[0]);
+      }
+      throw new Error('Failed to parse JSON: ' + content.substring(0, 200));
+    }
+  }
+  return content;
+}
+
+// ========== Cache ==========
+function getCacheKey(gene, disease) {
+  return gene.toUpperCase().trim() + '||' + disease.toLowerCase().trim();
+}
+function getCached(gene, disease) {
+  return CACHE[getCacheKey(gene, disease)];
+}
+function setCached(gene, disease, result) {
+  CACHE[getCacheKey(gene, disease)] = {
+    ...result,
+    cachedAt: new Date().toISOString()
+  };
+  localStorage.setItem('causatwin_cache', JSON.stringify(CACHE));
+  updateCacheInfo();
+}
+function updateCacheInfo() {
+  const n = Object.keys(CACHE).length;
+  document.getElementById('cacheInfo').textContent = n > 0 ? t('cache.info', n) : '';
+}
+
+// ========== Progress ==========
+function showProgress() {
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('resultSection').style.display = 'none';
+}
+function setProgress(percent, title, steps) {
+  document.getElementById('progressBar').style.width = percent + '%';
+  document.getElementById('progressTitle').textContent = title;
+  const stepsDiv = document.getElementById('progressSteps');
+  stepsDiv.innerHTML = '';
+  for (const s of steps) {
+    const div = document.createElement('div');
+    div.className = 'progress-step' + (s.status === 'active' ? ' active' : s.status === 'done' ? ' done' : '');
+    div.textContent = (s.status === 'done' ? '✓ ' : s.status === 'active' ? '→ ' : '· ') + s.label;
+    stepsDiv.appendChild(div);
+  }
+}
+function hideProgress() {
+  document.getElementById('progressSection').style.display = 'none';
+}
+
+// ========== Error ==========
+function showError(msg, type = 'error') {
+  const banner = document.getElementById('errorBanner');
+  banner.textContent = msg;
+  banner.className = 'error-banner show';
+  if (type === 'info') {
+    banner.style.background = 'var(--blue-light)';
+    banner.style.color = 'var(--blue)';
+  } else {
+    banner.style.background = '';
+    banner.style.color = '';
+  }
+}
+function hideError() {
+  document.getElementById('errorBanner').classList.remove('show');
+}
+
+// ========== Run Debate ==========
+async function runDebate() {
+  const gene = document.getElementById('geneInput').value.trim();
+  const disease = document.getElementById('diseaseInput').value.trim();
+  if (!gene || !disease) {
+    showError(t('error.gene_disease_required'));
+    return;
+  }
+  
+  // Check cache
+  const cached = getCached(gene, disease);
+  if (cached) {
+    showError(t('error.cached'), 'info');
+    renderResult(cached, true);
+    return;
+  }
+  
+  if (CURRENT_MODE === 'real' && !API_KEY) {
+    showError(t('error.api_key_setup'));
+    return;
+  }
+  
+  if (CURRENT_MODE === 'demo') {
+    const result = runDemoMode(gene, disease);
+    renderResult(result, false);
+    return;
+  }
+  
+  // Real LLM mode
+  document.getElementById('runBtn').disabled = true;
+  showProgress();
+  hideError();
+  
+  try {
+    const result = await runRealLLMDebate(gene, disease, API_KEY, MODEL_NAME);
+    setCached(gene, disease, result);
+    renderResult(result, false);
+  } catch (e) {
+    showError(t('error.api_failed', e.message));
+  } finally {
+    document.getElementById('runBtn').disabled = false;
+    hideProgress();
+  }
+}
+
+// ========== Demo Mode (uses KB) ==========
+function runDemoMode(gene, disease) {
+  // Use KB lookup
+  const normGene = normalizeGeneName(gene);
+  const target = TARGET_KB[normGene] || null;
+  
+  if (!target) {
+    return {
+      target: { gene_input: gene, gene_normalized: normGene, disease_input: disease, in_kb: false, protein_class: 'Unknown' },
+      rounds: synthesizeRounds(normGene, disease, null),
+      final: { final_score: 5.0, decision: 'Hold', confidence: 3.0, consensus_summary: `Knowledge base does not have curated data for ${normGene}. Recommendation: Manual review of UniProt and Open Targets required.`, next_steps: ['Curate literature for this target', 'Consult domain expert', 'Re-evaluate with more data'] },
+      mode: 'demo',
+      synthesized: true
+    };
+  }
+  
+  const in_kb = true;
+  target.in_kb = true;
+  const tier_to_score = { 1: 9, 2: 7, 3: 5, 4: 4 };
+  let drug_tier = target.druggability_tier;
+  if (target.failure_history) drug_tier = Math.max(1, drug_tier - 1);
+  const final_score = ((tier_to_score[target.tier] || 6) + (tier_to_score[drug_tier] || 6)) / 2;
+  const decision = final_score >= 7.5 ? 'Advance' : final_score >= 6.0 ? 'Conditional Advance' : final_score >= 4.0 ? 'Hold' : 'Reject';
+  
+  return {
+    target: { gene_input: gene, gene_normalized: normGene, disease_input: disease, in_kb: true, protein_class: target.protein_class, druggability_tier: target.druggability_tier },
+    rounds: synthesizeRounds(normGene, disease, target),
+    final: {
+      final_score: Math.round(final_score * 10) / 10,
+      decision: decision,
+      confidence: Math.min(9, 5 + (target.tier + target.druggability_tier)),
+      consensus_summary: `${normGene} (${target.protein_class}) for ${disease}: Genetic evidence tier ${target.tier}, druggability tier ${target.druggability_tier}. ${target.failure_history ? 'Historical failures noted: ' + target.failure_history : 'No major historical failures known.'} Final score: ${Math.round(final_score * 10) / 10}, decision: ${decision}.`,
+      next_steps: ['Validate in orthogonal model systems', 'Confirm genetic evidence in independent cohort', 'Conduct safety/tox screen']
+    },
+    mode: 'demo',
+    synthesized: true
+  };
+}
+
+function normalizeGeneName(gene) {
+  const g = gene.trim().toUpperCase();
+  const aliases = {
+    'TNF-ALPHA': 'TNF', 'TNFA': 'TNF', 'LIPOPROTEIN(A)': 'LPA', 'LP(A)': 'LPA',
+    'GLP-1R': 'GLP1R', 'GLP-1': 'GLP1R', 'FXI': 'F11', 'FACTOR XI': 'F11',
+    'JAK-1': 'JAK1', 'JAK-2': 'JAK2', 'JAK-3': 'JAK3', 'TYK-2': 'TYK2',
+    'A-SYNUCLEIN': 'SNCA', 'ALPHA-SYNUCLEIN': 'SNCA', 'GPR40': 'GPR40', 'FFAR1': 'GPR40',
+    'GPR120': 'FFAR4', 'SGLT-2': 'SGLT2', 'LDL-R': 'LDLR', 'P53': 'TP53',
+    'A-BETA': 'APP', 'ABETA': 'APP'
+  };
+  return aliases[g] || g;
+}
+
+function synthesizeRounds(gene, disease, target) {
+  // Generate 4 rounds of "synthesized" debate
+  if (!target) {
+    return defaultRounds(gene, disease);
+  }
+  const tierScores = target.tier >= 3 ? { causal: 9, cross: 7, mr: 9, pqtl: 8 } : 
+                     target.tier === 2 ? { causal: 7, cross: 6, mr: 7, pqtl: 6 } :
+                     { causal: 5, cross: 4, mr: 5, pqtl: 4 };
+  const drugScores = target.druggability_tier <= 2 ? { drug: 8, mod: 8, path: target.pathway_centrality || 7, off: target.off_target_risk || 7 } :
+                     { drug: 5, mod: 5, path: target.pathway_centrality || 5, off: target.off_target_risk || 5 };
+  return {
+    'R1': {
+      BEA: { argument: `[Demo Mode] For ${disease}, ${gene} (${target.protein_class}) shows: ${target.genetic_evidence || 'genetic evidence available in literature'}. Key variants: ${target.key_variants || 'see literature'}. MR strength: ${target.mr_strength || 'moderate'}.`, scores: tierScores },
+      BCA: { argument: `[Demo Mode] ${gene} druggability: Tier ${target.druggability_tier}. Modalities: ${(target.modalities || ['various']).join(', ')}. Approved drugs: ${target.approved_drugs || 'none yet'}.`, scores: drugScores },
+      MA: { argument: `Initial arbitration: ${gene} for ${disease} shows ${target.tier <= 2 ? 'strong' : 'moderate'} genetic and druggability signals.`, scores: {} }
+    },
+    'R2': {
+      BEA: { argument: `BEA acknowledges BCA's druggability assessment. Causal evidence for ${gene} is ${target.genetic_evidence ? 'well-supported' : 'preliminary'}.`, scores: tierScores },
+      BCA: { argument: `BCA acknowledges BEA's causal evidence. Druggability tier ${target.druggability_tier} ${target.failure_history ? '(with historical failure noted: ' + target.failure_history + ')' : ''}.`, scores: drugScores },
+      MA: { argument: `Mid-debate: BEA and BCA converging.`, scores: {} }
+    },
+    'R3': {
+      BEA: { argument: `BEA final: ${gene} for ${disease} causal evidence tier ${target.tier}. Scores locked.`, scores: tierScores },
+      BCA: { argument: `BCA final: ${gene} druggability tier ${target.druggability_tier}, modalities validated.`, scores: drugScores },
+      MA: { argument: `MA: See consensus_summary.`, scores: { final_score: 'see final', confidence: 8 } }
+    },
+    'R4': {
+      BEA: { argument: `BEA reflection: Agree with MA.`, scores: {}, agreement: 'agree' },
+      BCA: { argument: `BCA reflection: Agree with MA.`, scores: {}, agreement: 'agree' },
+      MA: { argument: `[Final arbitration in consensus_summary]`, scores: {} }
+    }
+  };
+}
+
+function defaultRounds(gene, disease) {
+  return {
+    'R1': {
+      BEA: { argument: `[Demo Mode - No KB data] For ${disease}, ${gene}: Manual review required. No curated genetic evidence available.`, scores: { causal_evidence: 5, cross_population: 4, mr_strength: 5, pQTL_signal: 3 } },
+      BCA: { argument: `[Demo Mode - No KB data] For ${disease}, ${gene}: Druggability assessment requires manual review of protein class, PDB, and clinical trials.`, scores: { druggability: 5, modality_feasibility: 5, pathway_centrality: 5, off_target_risk: 5 } },
+      MA: { argument: `No KB data. Recommend manual evaluation.`, scores: {} }
+    }
+  };
+}
+
+// ========== Real LLM Debate ==========
+async function runRealLLMDebate(gene, disease, apiKey, model) {
+  const rounds = {};
+  const allSteps = [];
+  
+  for (let r = 1; r <= 4; r++) {
+    const rKey = 'R' + r;
+    
+    // Build user prompts
+    const beaUser = buildBEAUserPrompt(gene, disease, rounds, r);
+    const bcaUser = buildBCAUserPrompt(gene, disease, rounds, r);
+    
+    // Step: BEA + BCA in parallel
+    setProgress(((r - 1) * 25) + 5, t('progress.r_eval', r), [
+      ...allSteps,
+      { label: t('progress.r_bea', r), status: 'active' },
+      { label: t('progress.r_bca', r), status: 'active' },
+      { label: t('progress.r_ma_arb', r), status: 'pending' }
+    ]);
+    
+    const [beaResult, bcaResult] = await Promise.all([
+      callDeepSeek(apiKey, BEA_PROMPT(gene, disease), beaUser, model, true),
+      callDeepSeek(apiKey, BCA_PROMPT(gene, disease), bcaUser, model, true)
+    ]);
+    
+    // Step: MA arbitration
+    setProgress(((r - 1) * 25) + 15, t('progress.r_ma', r), [
+      ...allSteps,
+      { label: t('progress.r_bea_done', r), status: 'done' },
+      { label: t('progress.r_bca_done', r), status: 'done' },
+      { label: `R${r} MA 仲裁中...`, status: 'active' }
+    ]);
+    
+    const maUser = `Round ${r} for ${gene} and ${disease}.
+
+BEA's argument: ${beaResult.argument}
+BEA's scores: ${JSON.stringify(beaResult.scores)}
+
+BCA's argument: ${bcaResult.argument}
+BCA's scores: ${JSON.stringify(bcaResult.scores)}
+
+Integrate and provide final arbitration. Output strict JSON.`;
+    
+    const maResult = await callDeepSeek(apiKey, MA_PROMPT, maUser, model, true);
+    
+    rounds[rKey] = {
+      BEA: { ...beaResult, agreement: r === 4 ? 'agree' : 'n/a' },
+      BCA: { ...bcaResult, agreement: r === 4 ? 'agree' : 'n/a' },
+      MA: { ...maResult, agreement: 'n/a' }
+    };
+    
+    allSteps.push(
+      { label: t('progress.r_bea_done', r), status: 'done' },
+      { label: t('progress.r_bca_done', r), status: 'done' },
+      { label: t('progress.r_ma_done', r), status: 'done' }
+    );
+  }
+  
+  // Final result = R4 MA
+  const finalMA = rounds.R4.MA;
+  
+  return {
+    target: { gene_input: gene, gene_normalized: gene, disease_input: disease, in_kb: 'live' },
+    rounds: rounds,
+    final: {
+      final_score: finalMA.final_score,
+      decision: finalMA.decision,
+      confidence: finalMA.confidence,
+      consensus_summary: finalMA.consensus_summary,
+      next_steps: finalMA.next_steps || []
+    },
+    mode: 'real',
+    synthesized: false,
+    timestamp: new Date().toISOString()
+  };
+}
+
+function buildBEAUserPrompt(gene, disease, rounds, currentRound) {
+  if (currentRound === 1) {
+    return `Analyze ${gene} for ${disease}. Provide your initial genetic evidence assessment.`;
+  }
+  const prev = rounds['R' + (currentRound - 1)];
+  if (!prev) return 'Continue analysis.';
+  return `Round ${currentRound}.
+
+Your previous argument: ${prev.BEA.argument}
+Your previous scores: ${JSON.stringify(prev.BEA.scores)}
+
+Other agent's (BCA) previous argument: ${prev.BCA.argument}
+BCA's previous scores: ${JSON.stringify(prev.BCA.scores)}
+
+Refine or challenge. Output strict JSON.`;
+}
+
+function buildBCAUserPrompt(gene, disease, rounds, currentRound) {
+  if (currentRound === 1) {
+    return `Analyze druggability of ${gene} for ${disease}. Provide your initial assessment.`;
+  }
+  const prev = rounds['R' + (currentRound - 1)];
+  if (!prev) return 'Continue analysis.';
+  return `Round ${currentRound}.
+
+Your previous argument: ${prev.BCA.argument}
+Your previous scores: ${JSON.stringify(prev.BCA.scores)}
+
+Other agent's (BEA) previous argument: ${prev.BEA.argument}
+BEA's previous scores: ${JSON.stringify(prev.BEA.scores)}
+
+Refine or challenge. Output strict JSON.`;
+}
+
+// ========== Render ==========
+function renderResult(result, isCached) {
+  hideProgress();
+  const section = document.getElementById('resultSection');
+  section.style.display = 'block';
+  
+  const finalScore = result.final.final_score;
+  const decision = result.final.decision;
+  const confidence = result.final.confidence;
+  
+  const decClass = decision === 'Advance' ? 'badge-advance' :
+                   decision === 'Reject' ? 'badge-reject' :
+                   decision === 'Hold' ? 'badge-hold' : 'badge-conditional';
+  
+  const isReal = result.mode === 'real';
+  const modeBadge = isReal ? '<span class="badge badge-real">' + t('mode.real_llm') + '</span>' : '<span class="badge badge-demo">' + t('mode.demo') + '</span>';
+  
+  let html = `
+    <div class="target-header">
+      <div class="target-info">
+        <h2>${result.target.gene_input} + ${result.target.disease_input} ${modeBadge}</h2>
+        <div class="subtitle">
+          ${result.target.protein_class ? t('result.protein_class', result.target.protein_class) : ''}
+          ${result.target.in_kb === false ? ' · <span style="color:var(--amber);">' + t('result.not_in_kb') + '</span>' : ''}
+          ${result.target.in_kb === true ? ' · ' + t('result.in_kb') : ''}
+        </div>
+      </div>
+      <div class="final-score">
+        <div class="number">${finalScore !== undefined ? (typeof finalScore === 'number' ? finalScore.toFixed(1) : finalScore) : 'N/A'}</div>
+        <div class="label"><span class="badge ${decClass}">${decision}</span> · ${t('result.confidence')} ${confidence !== undefined ? confidence : 'N/A'}</div>
+      </div>
+    </div>
+    
+    <div class="consensus">
+      <h3>${t('result.consensus')}</h3>
+      <div style="font-size:13px;line-height:1.7;">${result.final.consensus_summary || 'N/A'}</div>
+      ${result.final.next_steps && result.final.next_steps.length ? `
+        <div class="next-steps">
+          <h4>${t('result.next_steps')}</h4>
+          <ol>${result.final.next_steps.map(s => '<li>' + escapeHtml(s) + '</li>').join('')}</ol>
+        </div>
+      ` : ''}
+    </div>
+    
+    <div class="tabs" id="roundTabs">
+      ${Object.keys(result.rounds).map((rk, i) => `<div class="tab ${i === 0 ? 'active' : ''}" onclick="switchRound('${rk}')">${rk}</div>`).join('')}
+    </div>
+  `;
+  
+  for (const rk of Object.keys(result.rounds)) {
+    const rd = result.rounds[rk];
+    html += `<div class="tab-content" id="round-${rk}" style="${rk === Object.keys(result.rounds)[0] ? '' : 'display:none;'}">`;
+    for (const agent of ['BEA', 'BCA', 'MA']) {
+      const ad = rd[agent];
+      if (!ad) continue;
+      const agentClass = agent === 'BEA' ? 'bea' : agent === 'BCA' ? 'bca' : 'ma';
+      const agentName = agent === 'BEA' ? t('agent.bea') : agent === 'BCA' ? t('agent.bca') : t('agent.ma');
+      const agentRole = agent === 'BEA' ? t('agent.bea_role') : agent === 'BCA' ? t('agent.bca_role') : t('agent.ma_role');
+      html += `
+        <div class="agent-card ${agentClass}">
+          <div class="agent-header">
+            <span class="agent-name">${agentName}</span>
+            <span class="agent-role">${agentRole}</span>
+            ${ad.agreement && ad.agreement !== 'n/a' ? '<span class="badge badge-' + (ad.agreement === 'agree' ? 'advance' : 'reject') + '">' + ad.agreement + '</span>' : ''}
+          </div>
+          <div class="agent-argument">${escapeHtml(ad.argument || '')}</div>
+          ${ad.scores && Object.keys(ad.scores).length ? `
+            <div class="scores-grid">
+              ${Object.entries(ad.scores).map(([k, v]) => `<div class="score-item"><span class="label">${k}</span><span class="value">${v}</span></div>`).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+    html += '</div>';
+  }
+  
+  section.innerHTML = html;
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  
+  if (window.lucide) lucide.createIcons();
+}
+
+function showDemoCase(c) {
+  // Convert demo case to renderResult format
+  const result = {
+    target: { gene_input: c.gene, gene_normalized: c.gene, disease_input: c.disease, in_kb: 'demo', protein_class: c.expected_decision ? 'pre-generated' : 'unknown' },
+    rounds: c.rounds,
+    final: c.final,
+    mode: 'demo-precomputed',
+    synthesized: false
+  };
+  renderResult(result, false);
+}
+
+function switchRound(rk) {
+  // Hide all round contents
+  document.querySelectorAll('[id^="round-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('round-' + rk).style.display = 'block';
+  // Update tabs
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function escapeHtml(text) {
+  if (typeof text !== 'string') return String(text);
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ========== Init ==========
+init();
+</script>
+</body>
+</html>
