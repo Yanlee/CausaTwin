@@ -1,0 +1,60 @@
+cff-version: 1.2.0
+message: "If you use CausaTwin in your research, please cite both the v0.3 paper and v0.6 paper as shown below."
+title: "CausaTwin — Multi-Agent Adversarial Debate for Drug Target Discovery"
+type: software
+date-released: 2026-09-01
+version: "0.6.0"
+license: MIT
+repository-code: "https://github.com/Yanlee/CausaTwin"
+url: "https://yanlee.github.io/CausaTwin/"
+keywords:
+  - drug-target-discovery
+  - multi-agent-debate
+  - llm-agents
+  - bioinformatics
+  - drug-pipeline
+  - forward-looking-benchmark
+  - biomedical-applications
+authors:
+  - family-names: Li
+    given-names: Yan
+    affiliation: "BGI Research"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: Zhao
+    given-names: Danning
+    affiliation: "University of Chinese Academy of Sciences"
+  - family-names: Song
+    given-names: Xuanying
+    affiliation: "University of Chinese Academy of Sciences"
+  - family-names: Zhang
+    given-names: Zilin
+    affiliation: "University of Chinese Academy of Sciences"
+  - family-names: Zhou
+    given-names: Luting
+    affiliation: "Shanghai Jiao Tong University"
+  - family-names: Jin
+    given-names: Xiangqian
+    affiliation: "BGI-Health"
+  - family-names: Xin
+    given-names: Hongyi
+    affiliation: "Shanghai Jiao Tong University"
+preferred-citation:
+  type: article
+  title: "When Solo Beats the Committee: Multi-Agent Debate vs Single-Agent Decision in 50-Case Forward-Looking Drug Pipeline Scoring"
+  authors:
+    - family-names: Li
+      given-names: Yan
+    - family-names: Zhao
+      given-names: Danning
+    - family-names: Song
+      given-names: Xuanying
+    - family-names: Zhang
+      given-names: Zilin
+    - family-names: Zhou
+      given-names: Luting
+    - family-names: Jin
+      given-names: Xiangqian
+    - family-names: Xin
+      given-names: Hongyi
+  year: 2026
+  publisher: "bioRxiv / Bioinformatics Application Note (in preparation)"
